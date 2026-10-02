@@ -1,0 +1,124 @@
+name: Git Flow CI - Python Básico
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+
+# ⚡ DESEMPENHO: Cancela execuções antigas em aberto se houver novo push na mesma branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 🔒 SEGURANÇA (Menor Privilégio): O token do GitHub tem permissão apenas de leitura do código
+permissions:
+  contents: read
+
+jobs:
+  # -------------------------------------------------------------
+  # JOB 1: Qualidade de Código e Análise Estática (Linter)
+  # -------------------------------------------------------------
+  code-quality:
+    name: 🎨 Qualidade & Linting
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12 com Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip" # ⚡ DESEMPENHO: Cache automático das dependências pip
+
+      - name: Instalar ferramentas de qualidade
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 ruff
+
+      - name: Validar Sintaxe dos Arquivos (compileall)
+        run: python -m compileall src/
+
+      - name: Executar Linter (Flake8 / Ruff)
+        run: |
+          # Verifica erros de sintaxe ou variáveis não utilizadas
+          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+  # -------------------------------------------------------------
+  # JOB 2: DevSecOps & Análise de Vulnerabilidades
+  # -------------------------------------------------------------
+  security-scan:
+    name: 🛡️ Segurança (DevSecOps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar Ferramentas de Análise de Segurança (SAST)
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: SAST - Análise Estática de Segurança do Código (Bandit)
+        run: |
+          # Verifica práticas inseguras no código Python (ex: uso de hardcoded passwords, eval, etc)
+          bandit -r src/ -ll
+
+      - name: SCA - Auditoria de Vulnerabilidades em Dependências (pip-audit)
+        run: |
+          # Verifica se existem pacotes vulneráveis instalados (caso exista requirements.txt)
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+            pip-audit
+          else
+            echo "Nenhum requirements.txt encontrado. Etapa ignorada."
+          fi
+
+  # -------------------------------------------------------------
+  # JOB 3: Testes Automatizados (Suíte de Testes)
+  # -------------------------------------------------------------
+  test-and-build:
+    name: 🧪 Testes Automatizados
+    needs: [code-quality, security-scan] # Só roda se os jobs de qualidade e segurança passarem
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependências e framework de testes
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+
+      - name: Executar Testes Unitários (Pytest)
+        run: |
+          # Executa a suíte de testes caso a pasta tests exista
+          if [ -d "tests" ]; then
+            pytest tests/
+          else
+            echo "Aviso: Pasta 'tests/' ainda não foi criada. Pulando testes unitários."
+          fi
