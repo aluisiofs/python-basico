@@ -19,6 +19,9 @@ concurrency:
 permissions:
   contents: read
 
+defaults:
+  run:
+    working-directory: ./python-basico
 jobs:
   # -------------------------------------------------------------
   # JOB 1: Qualidade de Código e Análise Estática (Linter e Tipagem)
