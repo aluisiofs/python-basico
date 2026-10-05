@@ -22,7 +22,4 @@ def ler_numero(mensagem: str) -> float:
             return float(entrada)
 
         except ValueError:
-            print(
-                "❌ [ERRO] Entrada inválida! "
-                "Por favor, digite apenas números."
-            )
+            print("❌ [ERRO] Entrada inválida! " "Por favor, digite apenas números.")
