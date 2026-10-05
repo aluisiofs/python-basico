@@ -16,14 +16,12 @@ concurrency:
   cancel-in-progress: true
 
 # 🔒 SEGURANÇA (Menor Privilégio): O token do GitHub tem permissão apenas de leitura do código
-
 permissions:
   contents: read
 
 defaults:
   run:
     working-directory: ./python-basico
-
 jobs:
   # -------------------------------------------------------------
   # JOB 1: Qualidade de Código e Análise Estática (Linter e Tipagem)

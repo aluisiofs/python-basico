@@ -105,12 +105,9 @@ def criar_cliente(clientes: list):
         return
 
     nome = input("Informe o nome completo: ").strip()
-    data_nascimento = input(
-        "Informe a data de nascimento (dd-mm-aaaa): "
-    ).strip()
+    data_nascimento = input("Informe a data de nascimento (dd-mm-aaaa): ").strip()
     endereco = input(
-        "Informe o endereço "
-        "(logradouro, nro - bairro - cidade/sigla estado): "
+        "Informe o endereço " "(logradouro, nro - bairro - cidade/sigla estado): "
     ).strip()
 
     cliente = models.cliente.PessoaFisica(
@@ -130,10 +127,7 @@ def criar_conta(numero_conta: int, clientes: list, contas: list):
     cliente = filtrar_cliente(cpf, clientes)
 
     if not cliente:
-        print(
-            "\n❌ Cliente não encontrado! "
-            "Cadastre o cliente primeiro."
-        )
+        print("\n❌ Cliente não encontrado! " "Cadastre o cliente primeiro.")
         return
 
     conta = models.conta.ContaCorrente.nova_conta(
@@ -145,8 +139,7 @@ def criar_conta(numero_conta: int, clientes: list, contas: list):
     cliente.adicionar_conta(conta)
 
     print(
-        f"\n✅ Conta C/C nº {numero_conta} "
-        f"criada com sucesso para {cliente.nome}!"
+        f"\n✅ Conta C/C nº {numero_conta} " f"criada com sucesso para {cliente.nome}!"
     )
 
 
@@ -205,10 +198,7 @@ def main():
             sys.exit()
 
         else:
-            print(
-                "\n❌ Opção inválida, "
-                "por favor selecione novamente."
-            )
+            print("\n❌ Opção inválida, " "por favor selecione novamente.")
 
 
 if __name__ == "__main__":
