@@ -1,73 +1,214 @@
-"""Ponto de Entrada da Aplicação CLI - NTT DATA."""
+"""Sistema Bancário CLI - versão POO (Semana 4 / Trilha NTT DATA)."""
 
-from src.modules.calculations import (
-    dividir,
-    multiplicar,
-    somar,
-    subtrair,
-)
+import importlib
+import sys
+from pathlib import Path
 
-from src.utils.validators import ler_numero
+# Garante que o diretório atual da aplicação esteja no PYTHONPATH
+# ao executar o arquivo diretamente, sem depender da estrutura do projeto.
+ROOT = Path(__file__).resolve().parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+models = importlib.import_module("models")
 
 
-def exibir_menu():
-    """Exibe o menu principal da calculadora."""
-    print("\n" + "=" * 40)
-    print("     NTT DATA - CALCULADORA CLI v1.0")
-    print("=" * 40)
-    print("1. Somar")
-    print("2. Subtrair")
-    print("3. Multiplicar")
-    print("4. Dividir")
-    print("0. Sair")
-    print("=" * 40)
+def filtrar_cliente(cpf: str, clientes: list):
+    clientes_filtrados = [c for c in clientes if c.cpf == cpf]
+
+    return clientes_filtrados[0] if clientes_filtrados else None
+
+
+def recuperar_conta_cliente(cliente):
+    if not cliente.contas:
+        print("\n❌ Cliente não possui conta cadastrada!")
+        return None
+
+    return cliente.contas[0]
+
+
+def depositar(clientes: list):
+    cpf = input("Informe o CPF do cliente: ").strip()
+    cliente = filtrar_cliente(cpf, clientes)
+
+    if not cliente:
+        print("\n❌ Cliente não encontrado!")
+        return
+
+    valor = float(input("Informe o valor do depósito: R$ "))
+    transacao = models.transacao.Deposito(valor)
+
+    conta = recuperar_conta_cliente(cliente)
+
+    if not conta:
+        return
+
+    cliente.realizar_transacao(conta, transacao)
+
+
+def sacar(clientes: list):
+    cpf = input("Informe o CPF do cliente: ").strip()
+    cliente = filtrar_cliente(cpf, clientes)
+
+    if not cliente:
+        print("\n❌ Cliente não encontrado!")
+        return
+
+    valor = float(input("Informe o valor do saque: R$ "))
+    transacao = models.transacao.Saque(valor)
+
+    conta = recuperar_conta_cliente(cliente)
+
+    if not conta:
+        return
+
+    cliente.realizar_transacao(conta, transacao)
+
+
+def exibir_extrato(clientes: list):
+    cpf = input("Informe o CPF do cliente: ").strip()
+    cliente = filtrar_cliente(cpf, clientes)
+
+    if not cliente:
+        print("\n❌ Cliente não encontrado!")
+        return
+
+    conta = recuperar_conta_cliente(cliente)
+
+    if not conta:
+        return
+
+    print("\n================ EXTRATO ================")
+
+    transacoes = conta.historico.transacoes
+
+    if not transacoes:
+        print("Não foram realizadas movimentações.")
+    else:
+        for transacao in transacoes:
+            print(
+                f"\n{transacao['tipo']}:"
+                f"\n\tR$ {transacao['valor']:.2f}"
+                f" ({transacao['data']})"
+            )
+
+    print(f"\nSaldo atual:\tR$ {conta.saldo:.2f}")
+    print("=========================================")
+
+
+def criar_cliente(clientes: list):
+    cpf = input("Informe o CPF (somente números): ").strip()
+    cliente = filtrar_cliente(cpf, clientes)
+
+    if cliente:
+        print("\n❌ Já existe cliente com esse CPF!")
+        return
+
+    nome = input("Informe o nome completo: ").strip()
+    data_nascimento = input(
+        "Informe a data de nascimento (dd-mm-aaaa): "
+    ).strip()
+    endereco = input(
+        "Informe o endereço "
+        "(logradouro, nro - bairro - cidade/sigla estado): "
+    ).strip()
+
+    cliente = models.cliente.PessoaFisica(
+        nome=nome,
+        data_nascimento=data_nascimento,
+        cpf=cpf,
+        endereco=endereco,
+    )
+
+    clientes.append(cliente)
+
+    print("\n✅ Cliente criado com sucesso!")
+
+
+def criar_conta(numero_conta: int, clientes: list, contas: list):
+    cpf = input("Informe o CPF do cliente: ").strip()
+    cliente = filtrar_cliente(cpf, clientes)
+
+    if not cliente:
+        print(
+            "\n❌ Cliente não encontrado! "
+            "Cadastre o cliente primeiro."
+        )
+        return
+
+    conta = models.conta.ContaCorrente.nova_conta(
+        cliente=cliente,
+        numero=numero_conta,
+    )
+
+    contas.append(conta)
+    cliente.adicionar_conta(conta)
+
+    print(
+        f"\n✅ Conta C/C nº {numero_conta} "
+        f"criada com sucesso para {cliente.nome}!"
+    )
+
+
+def listar_contas(contas: list):
+    if not contas:
+        print("\nNenhuma conta cadastrada.")
+        return
+
+    print("\n================ LISTA DE CONTAS ================")
+
+    for conta in contas:
+        print("=" * 45)
+        print(str(conta))
 
 
 def main():
-    """Executa o fluxo principal da aplicação."""
+    clientes = []
+    contas = []
+
+    menu = """
+================ MENU ================
+[d] Depositar
+[s] Sacar
+[e] Extrato
+[nc] Nova Conta
+[lc] Listar Contas
+[nu] Novo Cliente
+[q] Sair
+=>
+"""
+
     while True:
-        exibir_menu()
+        opcao = input(menu).strip().lower()
 
-        opcao = input("Escolha uma opção (0-4): ").strip()
+        if opcao == "d":
+            depositar(clientes)
 
-        if opcao == "0":
-            print("\nEncerrando a aplicação... Até logo!")
-            break
+        elif opcao == "s":
+            sacar(clientes)
 
-        if opcao not in ["1", "2", "3", "4"]:
+        elif opcao == "e":
+            exibir_extrato(clientes)
+
+        elif opcao == "nu":
+            criar_cliente(clientes)
+
+        elif opcao == "nc":
+            numero_conta = len(contas) + 1
+            criar_conta(numero_conta, clientes, contas)
+
+        elif opcao == "lc":
+            listar_contas(contas)
+
+        elif opcao == "q":
+            print("\nObrigado por utilizar nosso sistema bancário!")
+            sys.exit()
+
+        else:
             print(
-                "❌ [ERRO] Opção inválida! "
-                "Escolha um número entre 0 e 4."
+                "\n❌ Opção inválida, "
+                "por favor selecione novamente."
             )
-            continue
-
-        # Leitura segura de dados
-        a = ler_numero("Digite o primeiro número: ")
-        b = ler_numero("Digite o segundo número: ")
-
-        # Processamento com tratamento de exceções
-        try:
-            if opcao == "1":
-                resultado = somar(a, b)
-                print(f"👉 Resultado: {a} + {b} = {resultado}")
-
-            elif opcao == "2":
-                resultado = subtrair(a, b)
-                print(f"👉 Resultado: {a} - {b} = {resultado}")
-
-            elif opcao == "3":
-                resultado = multiplicar(a, b)
-                print(f"👉 Resultado: {a} * {b} = {resultado}")
-
-            elif opcao == "4":
-                resultado = dividir(a, b)
-                print(f"👉 Resultado: {a} / {b} = {resultado}")
-
-        except ValueError as e:
-            print(f"❌ [REGRA DE NEGÓCIO]: {e}")
-
-        except Exception as e:
-            print(f"❌ [ERRO INESPERADO]: {e}")
 
 
 if __name__ == "__main__":
