@@ -21,10 +21,10 @@ permissions:
 
 jobs:
   # -------------------------------------------------------------
-  # JOB 1: Qualidade de Código e Análise Estática (Linter)
+  # JOB 1: Qualidade de Código e Análise Estática (Linter e Tipagem)
   # -------------------------------------------------------------
   code-quality:
-    name: 🎨 Qualidade & Linting
+    name: 🎨 Qualidade, Linting & Tipagem
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -41,15 +41,20 @@ jobs:
       - name: Instalar ferramentas de qualidade
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 ruff
+          # Adicionados 'black' (formatação PEP8) e 'mypy' (tipagem estática)
+          pip install flake8 ruff black mypy
 
       - name: Validar Sintaxe dos Arquivos (compileall)
         run: python -m compileall src/
 
-      - name: Executar Linter (Flake8 / Ruff)
-        run: |
-          # Verifica erros de sintaxe ou variáveis não utilizadas
-          flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+      - name: Executar Linter (Flake8)
+        run: flake8 src/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Validar Formatação (Black)
+        run: black --check src/
+
+      - name: Checagem de Tipos Estáticos (MyPy)
+        run: mypy src/ --ignore-missing-imports
 
   # -------------------------------------------------------------
   # JOB 2: DevSecOps & Análise de Vulnerabilidades
@@ -76,12 +81,12 @@ jobs:
 
       - name: SAST - Análise Estática de Segurança do Código (Bandit)
         run: |
-          # Verifica práticas inseguras no código Python (ex: uso de hardcoded passwords, eval, etc)
+          # Verifica práticas inseguras no código Python
           bandit -r src/ -ll
 
       - name: SCA - Auditoria de Vulnerabilidades em Dependências (pip-audit)
         run: |
-          # Verifica se existem pacotes vulneráveis instalados (caso exista requirements.txt)
+          # Verifica pacotes vulneráveis instalados
           if [ -f "requirements.txt" ]; then
             pip install -r requirements.txt
             pip-audit
@@ -90,11 +95,11 @@ jobs:
           fi
 
   # -------------------------------------------------------------
-  # JOB 3: Testes Automatizados (Suíte de Testes)
+  # JOB 3: Testes Automatizados e Métrica de Cobertura
   # -------------------------------------------------------------
-  test-and-build:
-    name: 🧪 Testes Automatizados
-    needs: [code-quality, security-scan] # Só roda se os jobs de qualidade e segurança passarem
+  test-and-coverage:
+    name: 🧪 Testes & Cobertura (Quality Gate)
+    needs: [code-quality, security-scan] # Só roda se qualidade e segurança passarem
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -111,14 +116,41 @@ jobs:
       - name: Instalar dependências e framework de testes
         run: |
           python -m pip install --upgrade pip
-          pip install pytest
+          # Adicionado pytest-cov para cobertura de código
+          pip install pytest pytest-cov
           if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
 
-      - name: Executar Testes Unitários (Pytest)
+      - name: Executar Testes Unitários/Integração (Quality Gate >= 80%)
         run: |
-          # Executa a suíte de testes caso a pasta tests exista
+          # Executa testes com trava de segurança de 80% de cobertura
           if [ -d "tests" ]; then
-            pytest tests/
+            pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=80
           else
-            echo "Aviso: Pasta 'tests/' ainda não foi criada. Pulando testes unitários."
+            echo "Aviso: Pasta 'tests/' não encontrada. Pulando testes e validação de cobertura."
+          fi
+
+  # -------------------------------------------------------------
+  # JOB 4: Empacotamento e Build de Produção (Docker)
+  # -------------------------------------------------------------
+  docker-build-validation:
+    name: 🐳 Validação do Docker Build
+    needs: test-and-coverage # Só roda se os testes e a cobertura de 80% passarem
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Simular Build da Imagem Docker (Dry Run)
+        run: |
+          # Garante que o Dockerfile compila sem erros de dependência ou sintaxe
+          if [ -f "Dockerfile" ]; then
+            docker build -t app-backend-teste .
+            echo "✅ Build da imagem Docker concluído com sucesso."
+          else
+            echo "Aviso: Dockerfile não encontrado. Pulando validação de container."
           fi
