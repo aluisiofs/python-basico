@@ -16,10 +16,11 @@ concurrency:
   cancel-in-progress: true
 
 # 🔒 SEGURANÇA (Menor Privilégio): O token do GitHub tem permissão apenas de leitura do código
+
 permissions:
   contents: read
 
-  defaults:
+defaults:
   run:
     working-directory: ./python-basico
 
