@@ -1,1 +1,16 @@
 .coverage
+=======
+# Bytecode e caches do Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Relatórios de cobertura e cache de testes
+.coverage
+.pytest_cache/
+
+# Banco de dados SQLite local
+*.db
+*.sqlite
+*.sqlite3
+
