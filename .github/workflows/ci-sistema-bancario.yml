@@ -1,0 +1,160 @@
+name: Git Flow CI - Sistema Bancário API
+
+on:
+  push:
+    branches:
+      - "main"
+      - "develop"
+    paths:
+      - "sistema-bancario-api/**"
+      - ".github/workflows/ci-sistema-bancario.yml"
+  pull_request:
+    branches:
+      - "main"
+      - "develop"
+    paths:
+      - "sistema-bancario-api/**"
+      - ".github/workflows/ci-sistema-bancario.yml"
+
+# ⚡ DESEMPENHO: Cancela execuções antigas em aberto se houver novo push na mesma branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# 🔒 SEGURANÇA: Token com permissão apenas de leitura do código
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ./sistema-bancario-api
+
+jobs:
+  # -------------------------------------------------------------
+  # JOB 1: Qualidade de Código e Análise Estática (Linter e Tipagem)
+  # -------------------------------------------------------------
+  code-quality:
+    name: 🎨 Qualidade, Linting & Tipagem
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12 com Cache
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar ferramentas de qualidade
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 ruff black mypy
+
+      - name: Validar Sintaxe dos Arquivos (compileall)
+        run: python -m compileall app/
+
+      - name: Executar Linter (Flake8)
+        run: flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Validar Formatação (Black)
+        run: black --check app/
+
+      - name: Checagem de Tipos Estáticos (MyPy)
+        run: mypy app/ --ignore-missing-imports
+
+  # -------------------------------------------------------------
+  # JOB 2: DevSecOps & Análise de Vulnerabilidades
+  # -------------------------------------------------------------
+  security-scan:
+    name: 🛡️ Segurança (DevSecOps)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar Ferramentas de Análise de Segurança (SAST)
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit pip-audit
+
+      - name: SAST - Análise Estática de Segurança do Código (Bandit)
+        run: |
+          bandit -r app/ -ll
+
+      - name: SCA - Auditoria de Vulnerabilidades em Dependências (pip-audit)
+        run: |
+          if [ -f "requirements.txt" ]; then
+            pip install -r requirements.txt
+            pip-audit
+          else
+            echo "Nenhum requirements.txt encontrado. Etapa ignorada."
+          fi
+
+  # -------------------------------------------------------------
+  # JOB 3: Testes Automatizados e Métrica de Cobertura
+  # -------------------------------------------------------------
+  test-and-coverage:
+    name: 🧪 Testes & Cobertura (Quality Gate)
+    needs: [code-quality, security-scan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependências e framework de testes
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov
+          if [ -f "requirements.txt" ]; then pip install -r requirements.txt; fi
+
+      - name: Executar Testes Unitários/Integração (Quality Gate >= 80%)
+        run: |
+          if [ -d "tests" ]; then
+            pytest tests/ --cov=app --cov-report=term-missing --cov-fail-under=80
+          else
+            echo "Aviso: Pasta 'tests/' não encontrada. Pulando testes e validação de cobertura."
+          fi
+
+  # -------------------------------------------------------------
+  # JOB 4: Empacotamento e Build de Produção (Docker)
+  # -------------------------------------------------------------
+  docker-build-validation:
+    name: 🐳 Validação do Docker Build
+    needs: test-and-coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout do repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Simular Build da Imagem Docker (Dry Run)
+        run: |
+          if [ -f "Dockerfile" ]; then
+            docker build -t app-backend-teste .
+            echo "✅ Build da imagem Docker concluído com sucesso."
+          else
+            echo "Aviso: Dockerfile não encontrado. Pulando validação de container."
+          fi
