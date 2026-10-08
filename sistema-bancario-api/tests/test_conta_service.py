@@ -206,7 +206,6 @@ async def test_realizar_transacao_conta_inexistente():
     session = AsyncMock()
     session.add = Mock()
     session.get.return_value = None
-    
 
     dados = TransacaoCreate(
         tipo="deposito",

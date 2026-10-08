@@ -10,7 +10,9 @@ from app.db.session import get_db_session
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
 
 engine = create_async_engine(TEST_DATABASE_URL, echo=False, future=True)
-TestingSessionLocal = async_sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+TestingSessionLocal = async_sessionmaker(
+    bind=engine, class_=AsyncSession, expire_on_commit=False
+)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -30,9 +32,11 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
 
     app.dependency_overrides[get_db_session] = override_get_db_session
     transport = ASGITransport(app=app)
-    
+
     # Adicionado follow_redirects=True para resolver redirecionamentos de barra final
-    async with AsyncClient(transport=transport, base_url="http://test", follow_redirects=True) as ac:
+    async with AsyncClient(
+        transport=transport, base_url="http://test", follow_redirects=True
+    ) as ac:
         yield ac
-        
+
     app.dependency_overrides.clear()
