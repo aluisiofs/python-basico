@@ -13,7 +13,9 @@ class ClienteModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     nome: Mapped[str] = mapped_column(String(100), nullable=False)
-    cpf: Mapped[str] = mapped_column(String(11), unique=True, index=True, nullable=False)
+    cpf: Mapped[str] = mapped_column(
+        String(11), unique=True, index=True, nullable=False
+    )
     data_nascimento: Mapped[str] = mapped_column(String(10), nullable=False)
     endereco: Mapped[str] = mapped_column(String(255), nullable=False)
 

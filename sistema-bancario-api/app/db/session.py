@@ -6,10 +6,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "sqlite+aiosqlite:///./sistema_bancario.db"
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./sistema_bancario.db")
 
 engine = create_async_engine(
     DATABASE_URL,
@@ -23,6 +20,7 @@ AsyncSessionLocal = async_sessionmaker(
     expire_on_commit=False,
     autoflush=False,
 )
+
 
 async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Injetor de dependência para sessões do banco de dados nas rotas."""

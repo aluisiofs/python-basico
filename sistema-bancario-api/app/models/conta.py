@@ -13,7 +13,9 @@ class ContaModel(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     agencia: Mapped[str] = mapped_column(String(10), default="0001", nullable=False)
-    numero_conta: Mapped[int] = mapped_column(Integer, unique=True, index=True, nullable=False)
+    numero_conta: Mapped[int] = mapped_column(
+        Integer, unique=True, index=True, nullable=False
+    )
     saldo: Mapped[float] = mapped_column(Float, default=0.0, nullable=False)
 
     cliente_id: Mapped[int] = mapped_column(ForeignKey("clientes.id"), nullable=False)
