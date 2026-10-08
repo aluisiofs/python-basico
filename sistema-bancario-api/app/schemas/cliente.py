@@ -1,5 +1,4 @@
-# sistema-bancario-api/app/schemas/cliente.py
-from pydantic import BaseModel, Field, constr
+from pydantic import BaseModel, ConfigDict, Field, constr
 from typing import List, Optional
 
 
@@ -17,5 +16,4 @@ class ClienteCreate(ClienteBase):
 class ClienteResponse(ClienteBase):
     id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

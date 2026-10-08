@@ -1,10 +1,13 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class TransacaoBase(BaseModel):
     valor: float = Field(
-        ..., gt=0, description="O valor da transação deve ser maior que zero"
+        ...,
+        gt=0,
+        description="O valor da transação deve ser maior que zero",
     )
 
 
@@ -19,5 +22,4 @@ class TransacaoResponse(TransacaoBase):
     data_hora: datetime
     conta_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

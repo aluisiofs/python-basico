@@ -53,6 +53,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 ruff black mypy
 
+      - name: Checagem de Tipos Estáticos (MyPy)
+        run: mypy app/ --explicit-package-bases --ignore-missing-imports
+
       - name: Validar Sintaxe dos Arquivos (compileall)
         run: python -m compileall app/
 
@@ -61,9 +64,6 @@ jobs:
 
       - name: Validar Formatação (Black)
         run: black --check app/
-
-      - name: Checagem de Tipos Estáticos (MyPy)
-        run: mypy app/ --ignore-missing-imports
 
   # -------------------------------------------------------------
   # JOB 2: DevSecOps & Análise de Vulnerabilidades
