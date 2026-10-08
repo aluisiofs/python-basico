@@ -12,7 +12,9 @@ class TransacaoModel(Base):
     __tablename__ = "transacoes"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tipo: Mapped[str] = mapped_column(String(20), nullable=False)  # 'deposito' ou 'saque'
+    tipo: Mapped[str] = mapped_column(
+        String(20), nullable=False
+    )  # 'deposito' ou 'saque'
     valor: Mapped[float] = mapped_column(Float, nullable=False)
     data_hora: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
