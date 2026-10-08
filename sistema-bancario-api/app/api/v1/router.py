@@ -53,10 +53,10 @@ async def efetuar_transacao(
 
 
 @router.get(
-    "/clientes", 
-    response_model=List[ClienteResponse], 
+    "/clientes",
+    response_model=List[ClienteResponse],
     status_code=status.HTTP_200_OK,
-    tags=["Clientes"]
+    tags=["Clientes"],
 )
 async def listar_clientes(db: AsyncSession = Depends(get_db_session)):
     """Retorna a lista de todos os clientes cadastrados."""
@@ -67,18 +67,20 @@ async def listar_clientes(db: AsyncSession = Depends(get_db_session)):
 
 
 @router.get(
-    "/contas/{conta_id}", 
-    response_model=ContaResponse, 
+    "/contas/{conta_id}",
+    response_model=ContaResponse,
     status_code=status.HTTP_200_OK,
-    tags=["Contas"]
+    tags=["Contas"],
 )
 async def obter_conta(conta_id: int, db: AsyncSession = Depends(get_db_session)):
     """Busca uma conta específica pelo ID."""
     # Usando ContaModel
     result = await db.execute(select(ContaModel).where(ContaModel.id == conta_id))
     conta = result.scalar_one_or_none()
-    
+
     if not conta:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta não encontrada")
-        
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Conta não encontrada"
+        )
+
     return conta
